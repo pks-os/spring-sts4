@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2024 Pivotal, Inc.
+ * Copyright (c) 2017, 2025 Pivotal, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -35,9 +35,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.ide.vscode.boot.app.SpringSymbolIndex;
 import org.springframework.ide.vscode.boot.bootiful.BootLanguageServerTest;
 import org.springframework.ide.vscode.boot.bootiful.SymbolProviderTestConf;
+import org.springframework.ide.vscode.boot.index.SpringMetamodelIndex;
+import org.springframework.ide.vscode.boot.java.requestmapping.RequestMappingIndexElement;
 import org.springframework.ide.vscode.boot.java.utils.SpringIndexerJavaDependencyTracker;
 import org.springframework.ide.vscode.boot.java.utils.test.TestFileScanListener;
 import org.springframework.ide.vscode.commons.languageserver.java.JavaProjectFinder;
+import org.springframework.ide.vscode.commons.protocol.spring.Bean;
+import org.springframework.ide.vscode.commons.protocol.spring.SpringIndexElement;
 import org.springframework.ide.vscode.commons.util.UriUtil;
 import org.springframework.ide.vscode.commons.util.text.LanguageId;
 import org.springframework.ide.vscode.commons.util.text.TextDocument;
@@ -58,6 +62,7 @@ public class RequestMappingSymbolProviderTest {
 	@Autowired private BootLanguageServerHarness harness;
 	@Autowired private JavaProjectFinder projectFinder;
 	@Autowired private SpringSymbolIndex indexer;
+	@Autowired private SpringMetamodelIndex springIndex;
 
 	private File directory;
 
@@ -74,13 +79,33 @@ public class RequestMappingSymbolProviderTest {
 		CompletableFuture<Void> initProject = indexer.waitOperation();
 		initProject.get(5, TimeUnit.SECONDS);
 	}
+	
+	private List<? extends WorkspaceSymbol> getSymbols(String docUri) {
+		return indexer.getWorkspaceSymbolsFromSymbolIndex(docUri);
+	}
 
     @Test
     void testSimpleRequestMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/SimpleMappingClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/greeting", docUri, 6, 1, 6, 29));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/greeting", docUri, 8, 1, 8, 29));
+    }
+
+    @Test
+    void testRequestMappingIndexElements() throws Exception {
+        Bean[] beans = springIndex.getBeansWithName("test-request-mapping-symbols", "simpleMappingClass");
+        assertEquals(1, beans.length);
+        
+        List<SpringIndexElement> children = beans[0].getChildren();
+        List<SpringIndexElement> mappingChildren = children.stream()
+        	.filter(child -> child instanceof RequestMappingIndexElement)
+        	.toList();
+        
+        assertEquals(1, mappingChildren.size());
+        
+        RequestMappingIndexElement mappingElement = (RequestMappingIndexElement) mappingChildren.get(0);
+        assertEquals("/greeting", mappingElement.getPath());
     }
 
     @Test
@@ -89,9 +114,9 @@ public class RequestMappingSymbolProviderTest {
     void testSimpleRequestMappingSymbolFromConstantInDifferentClass() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/SimpleMappingClassWithConstantInDifferentClass.java").toUri().toString();
         String constantsUri = directory.toPath().resolve("src/main/java/org/test/Constants.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/path/from/constant", docUri, 6, 1, 6, 48));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/path/from/constant", docUri, 8, 1, 8, 48));
 
         //Verify whether dependency tracker logics works properly for this example.
         SpringIndexerJavaDependencyTracker dt = indexer.getJavaIndexer().getDependencyTracker();
@@ -114,9 +139,9 @@ public class RequestMappingSymbolProviderTest {
     void testUpdateDocumentWithConstantFromDifferentClass() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/SimpleMappingClassWithConstantInDifferentClass.java").toUri().toString();
         String constantsUri = directory.toPath().resolve("src/main/java/org/test/Constants.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/path/from/constant", docUri, 6, 1, 6, 48));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/path/from/constant", docUri, 8, 1, 8, 48));
 
         //Verify whether dependency tracker logics works properly for this example.
         SpringIndexerJavaDependencyTracker dt = indexer.getJavaIndexer().getDependencyTracker();
@@ -169,9 +194,9 @@ public class RequestMappingSymbolProviderTest {
     @Test
     void testSimpleRequestMappingSymbolFromConstantInSameClass() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/SimpleMappingClassWithConstantInSameClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/request/mapping/path/from/same/class/constant", docUri, 8, 1, 8, 52));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/request/mapping/path/from/same/class/constant", docUri, 10, 1, 10, 52));
 
         SpringIndexerJavaDependencyTracker dt = indexer.getJavaIndexer().getDependencyTracker();
         assertEquals(ImmutableSet.of(), dt.getAllDependencies().get(UriUtil.toFileString(docUri)));
@@ -180,9 +205,9 @@ public class RequestMappingSymbolProviderTest {
     @Test
     void testSimpleRequestMappingSymbolFromConstantInBinaryType() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/SimpleMappingClassWithConstantFromBinaryType.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/(inferred)", docUri, 7, 1, 7, 53));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/(inferred)", docUri, 9, 1, 9, 53));
 
         SpringIndexerJavaDependencyTracker dt = indexer.getJavaIndexer().getDependencyTracker();
         assertEquals(ImmutableSet.of(), dt.getAllDependencies().get(UriUtil.toFileString(docUri)));
@@ -191,151 +216,206 @@ public class RequestMappingSymbolProviderTest {
     @Test
     void testParentRequestMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/ParentMappingClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/parent/greeting -- GET", docUri, 8, 1, 8, 51));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/parent/greeting -- GET", docUri, 11, 1, 11, 51));
     }
 
     @Test
     void testEmptyPathWithParentRequestMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/ParentMappingClass2.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/parent2 -- GET,POST,DELETE", docUri, 11, 1, 11, 16));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/parent2 -- GET,POST,DELETE", docUri, 13, 1, 13, 16));
     }
 
     @Test
     void testParentRequestMappingSymbolWithPathAttribute() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/ParentMappingClass3.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/parent3/greeting -- GET", docUri, 8, 1, 8, 51));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/parent3/greeting -- GET", docUri, 11, 1, 11, 51));
     }
 
     @Test
     void testMappingPathFromSuperclass() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/SubclassWithMappingFromParent.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/superclasspath/", docUri, 6, 1, 6, 21));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/superclasspath/", docUri, 8, 1, 8, 21));
     }
 
     @Test
     void testMappingPathFromSuperclassWithConstant() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/SubclassWithMappingFromParentWithConstant.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/path/from/constant/", docUri, 6, 1, 6, 21));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/path/from/constant/", docUri, 8, 1, 8, 21));
+    }
+
+    @Test
+    void testMappingPathFromSuperclassWithStringConcatenation() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/SubclassWithMappingFromParentWithStringConcatenation.java").toUri().toString();
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/superpath/subclass", docUri, 8, 1, 8, 34));
+    }
+
+    @Test
+    void testMappingPathFromSuperclassWithStringConcatenationPerAttribute() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/SubclassWithMappingFromParentWithStringConcatenationPerAttribute.java").toUri().toString();
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/superpath/subclass", docUri, 8, 1, 8, 42));
     }
 
     @Test
     void testMappingPathFromSuperclassWithMethodsAndPathAttribute() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/SubclassWithMappingFromParentWithMethods.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/superclasspath -- POST,PUT - Accept: testconsume - Content-Type: text/plain", docUri, 6, 1, 6, 16));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/superclasspath -- POST,PUT - Accept: testconsume - Content-Type: text/plain", docUri, 8, 1, 8, 16));
     }
 
     @Test
     void testMappingPathFromMultiLevelClassHierarchy() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/SuperControllerLevel4.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/path-level2/final-subclass-path", docUri, 6, 1, 6, 39));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/path-level2/final-subclass-path", docUri, 8, 1, 8, 39));
     }
 
     @Test
     void testMappingPathFromSuperInterfaceEvenIfSuperclassContainsMappingPath() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/inheritance/ControllerAsSubclassAndInterfaceHierarchy.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(1, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/superinterface-path/last-path-segment -- GET - Accept: testconsume - Content-Type: text/plain", docUri, 6, 1, 6, 33));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(2, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/superinterface-path/last-path-segment -- GET - Accept: testconsume - Content-Type: text/plain", docUri, 8, 1, 8, 33));
+    }
+
+    @Test
+    void testMapoingIndexElementsWithDetails() throws Exception {
+        Bean[] beans = springIndex.getBeansWithName("test-request-mapping-symbols", "controllerAsSubclassAndInterfaceHierarchy");
+        assertEquals(1, beans.length);
+        
+        List<SpringIndexElement> children = beans[0].getChildren();
+        List<SpringIndexElement> mappingChildren = children.stream()
+        	.filter(child -> child instanceof RequestMappingIndexElement)
+        	.toList();
+        
+        assertEquals(1, mappingChildren.size());
+        
+        RequestMappingIndexElement mappingElement = (RequestMappingIndexElement) mappingChildren.get(0);
+        assertEquals("/superinterface-path/last-path-segment", mappingElement.getPath());
+
+        assertEquals(1, mappingElement.getHttpMethods().length);
+        assertEquals("GET", mappingElement.getHttpMethods()[0]);
+
+        assertEquals(1, mappingElement.getAcceptTypes().length);
+        assertEquals("testconsume", mappingElement.getAcceptTypes()[0]);
+
+        assertEquals(1, mappingElement.getContentTypes().length);
+        assertEquals("text/plain", mappingElement.getContentTypes()[0]);
     }
 
     @Test
     void testMultiRequestMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/MultiRequestMappingClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertEquals(2, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/hello1", docUri, 6, 1, 6, 44));
-        assertTrue(containsSymbol(symbols, "@/hello2", docUri, 6, 1, 6, 44));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertEquals(3, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/hello1", docUri, 8, 1, 8, 44));
+        assertTrue(containsSymbol(symbols, "@/hello2", docUri, 8, 1, 8, 44));
     }
 
     @Test
     void testGetMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/getData -- GET", docUri, 13, 1, 13, 24));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/getData -- GET", docUri, 16, 1, 16, 24));
     }
 
     @Test
     void testGetMappingSymbolWithoutPath() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/ -- GET", docUri, 41, 1, 41, 16));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/ -- GET", docUri, 44, 1, 44, 16));
     }
 
     @Test
     void testGetMappingSymbolWithoutAnything() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/ -- GET", docUri, 45, 1, 45, 14));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/ -- GET", docUri, 48, 1, 48, 14));
     }
 
     @Test
     void testDeleteMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/deleteData -- DELETE", docUri, 21, 1, 21, 30));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/deleteData -- DELETE", docUri, 24, 1, 24, 30));
     }
 
     @Test
     void testPostMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/postData -- POST", docUri, 25, 1, 25, 26));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/postData -- POST", docUri, 28, 1, 28, 26));
     }
 
     @Test
     void testPutMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/putData -- PUT", docUri, 17, 1, 17, 24));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/putData -- PUT", docUri, 20, 1, 20, 24));
     }
 
     @Test
     void testPatchMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/patchData -- PATCH", docUri, 29, 1, 29, 28));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/patchData -- PATCH", docUri, 32, 1, 32, 28));
     }
 
     @Test
     void testGetRequestMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/getHello -- GET", docUri, 33, 1, 33, 61));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/getHello -- GET", docUri, 36, 1, 36, 61));
     }
 
     @Test
     void testMultiRequestMethodMappingSymbol() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMethodClass.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols =  indexer.getSymbols(docUri);
-        assertTrue(containsSymbol(symbols, "@/postAndPutHello -- POST,PUT", docUri, 37, 1, 37, 76));
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/postAndPutHello -- POST,PUT", docUri, 40, 1, 40, 76));
     }
 
     @Test
     void testMediaTypes() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/RequestMappingMediaTypes.java").toUri().toString();
-        List<? extends WorkspaceSymbol> symbols = indexer.getSymbols(docUri);
-        assertEquals(7, symbols.size());
-        assertTrue(containsSymbol(symbols, "@/consume1 -- HEAD - Accept: testconsume", docUri, 8, 1, 8, 90));
-        assertTrue(containsSymbol(symbols, "@/consume2 - Accept: text/plain", docUri, 13, 1, 13, 73));
-        assertTrue(containsSymbol(symbols, "@/consume3 - Accept: text/plain,testconsumetype", docUri, 18, 1, 18, 94));
-        assertTrue(containsSymbol(symbols, "@/produce1 - Content-Type: testproduce", docUri, 23, 1, 23, 60));
-        assertTrue(containsSymbol(symbols, "@/produce2 - Content-Type: text/plain", docUri, 28, 1, 28, 73));
-        assertTrue(containsSymbol(symbols, "@/produce3 - Content-Type: text/plain,testproducetype", docUri, 33, 1, 33, 94));
-        assertTrue(containsSymbol(symbols, "@/everything - Accept: application/json,text/plain,testconsume - Content-Type: application/json", docUri, 38, 1, 38, 170));
+        List<? extends WorkspaceSymbol> symbols = getSymbols(docUri);
+        assertEquals(8, symbols.size());
+        assertTrue(containsSymbol(symbols, "@/consume1 -- HEAD - Accept: testconsume", docUri, 10, 1, 10, 90));
+        assertTrue(containsSymbol(symbols, "@/consume2 - Accept: text/plain", docUri, 15, 1, 15, 73));
+        assertTrue(containsSymbol(symbols, "@/consume3 - Accept: text/plain,testconsumetype", docUri, 20, 1, 20, 94));
+        assertTrue(containsSymbol(symbols, "@/produce1 - Content-Type: testproduce", docUri, 25, 1, 25, 60));
+        assertTrue(containsSymbol(symbols, "@/produce2 - Content-Type: text/plain", docUri, 30, 1, 30, 73));
+        assertTrue(containsSymbol(symbols, "@/produce3 - Content-Type: text/plain,testproducetype", docUri, 35, 1, 35, 94));
+        assertTrue(containsSymbol(symbols, "@/everything - Accept: application/json,text/plain,testconsume - Content-Type: application/json", docUri, 40, 1, 40, 170));
+    }
+    
+    @Test
+    void testPathWithConcatenatedString() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/MappingsWithConcatenatedStrings.java").toUri().toString();
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/path1/path2 -- GET", docUri, 16, 1, 16, 33));
+    }
+
+    @Test
+    void testPathWithConcatenatedStringAndConstantInvolved() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/MappingsWithConcatenatedStrings.java").toUri().toString();
+        List<? extends WorkspaceSymbol> symbols =  getSymbols(docUri);
+        assertTrue(containsSymbol(symbols, "@/path1/path/from/constant -- GET", docUri, 20, 1, 20, 56));
     }
 
 	private boolean containsSymbol(List<? extends WorkspaceSymbol> symbols, String name, String uri, int startLine, int startCHaracter, int endLine, int endCharacter) {

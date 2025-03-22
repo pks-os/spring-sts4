@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
 	id="org.springframework.boot.ide.branding.feature"
-	label="Spring Tool Suite 4 Branding Feature"
-	version="4.28.0.qualifier"
+	label="Spring Tools for Eclipse Branding Feature"
+	version="4.30.0.qualifier"
 	provider-name="Broadcom">
 
 	<plugin

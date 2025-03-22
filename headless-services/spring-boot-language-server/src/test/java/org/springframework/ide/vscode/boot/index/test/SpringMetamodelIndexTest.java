@@ -13,7 +13,6 @@ package org.springframework.ide.vscode.boot.index.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,16 +53,16 @@ public class SpringMetamodelIndexTest {
 	@Test
 	void testEmptyIndex() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		assertNull(index.getBeansOfProject("someProject"));
-		assertNull(index.getBeansWithName("someProject", "someBeanName"));
+		assertEquals(0, index.getBeansOfProject("someProject").length);
+		assertEquals(0, index.getBeansWithName("someProject", "someBeanName").length);
 	}
 
 	@Test
 	void testSimpleProjectWithBeansPerProject() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean1, bean2, bean3});
 		
@@ -76,7 +75,7 @@ public class SpringMetamodelIndexTest {
 		assertTrue(beansList.contains(bean2));
 		assertTrue(beansList.contains(bean3));
 		
-		Bean anotherBean = new Bean("anotherBean", "beanType", null, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean anotherBean = new Bean("anotherBean", "beanType", null, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		assertFalse(beansList.contains(anotherBean));
 	}
@@ -84,9 +83,9 @@ public class SpringMetamodelIndexTest {
 	@Test
 	void testSimpleProjectWithBeansPerDocument() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean3 = new Bean("beanWithDifferentName", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean3 = new Bean("beanWithDifferentName", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean1, bean2, bean3});
 		
@@ -111,9 +110,9 @@ public class SpringMetamodelIndexTest {
 	@Test
 	void testSimpleProjectWithBeansPerName() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean3 = new Bean("beanWithDifferentName", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean3 = new Bean("beanWithDifferentName", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean1, bean2, bean3});
 		
@@ -126,23 +125,23 @@ public class SpringMetamodelIndexTest {
 		assertTrue(beansList.contains(bean2));
 		assertFalse(beansList.contains(bean3));
 		
-		assertNull(index.getBeansWithName("nonExistingProject", "beanName1"));
+		assertEquals(0, index.getBeansWithName("nonExistingProject", "beanName1").length);
 	}
 
 	@Test
 	void testUpdateBeansForSpecificDoc() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
-		index.updateBeans("someProject", locationForDoc1.getUri(), new Bean[] {bean1, bean2});
-		index.updateBeans("someProject", locationForDoc2.getUri(), new Bean[] {bean3});
+		index.updateElements("someProject", locationForDoc1.getUri(), new Bean[] {bean1, bean2});
+		index.updateElements("someProject", locationForDoc2.getUri(), new Bean[] {bean3});
 		
-		Bean updatedBean1 = new Bean("updated1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean updatedBean2 = new Bean("updated2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean updatedBean1 = new Bean("updated1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean updatedBean2 = new Bean("updated2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
-		index.updateBeans("someProject", locationForDoc1.getUri(), new Bean[] {updatedBean1, updatedBean2});
+		index.updateElements("someProject", locationForDoc1.getUri(), new Bean[] {updatedBean1, updatedBean2});
 
 		Bean[] beans = index.getBeansOfProject("someProject");
 		assertNotNull(beans);
@@ -156,19 +155,19 @@ public class SpringMetamodelIndexTest {
 		assertFalse(beansList.contains(bean1));
 		assertFalse(beansList.contains(bean2));
 		
-		Bean anotherBean = new Bean("anotherBean", "beanType", null, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean anotherBean = new Bean("anotherBean", "beanType", null, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		assertFalse(beansList.contains(anotherBean));
 	}
 	
 	@Test
 	void testUpdateAllBeansForSpecificProject() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 
 		index.updateBeans("someProject", new Bean[] {bean1, bean2});
 
-		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean3});
 		
@@ -185,14 +184,14 @@ public class SpringMetamodelIndexTest {
 	@Test
 	void testRemoveAllBeansForSpecificProject() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject1", new Bean[] {bean1, bean2});
 		index.updateBeans("someProject2", new Bean[] {bean3});
 		
-		index.removeBeans("someProject1");
+		index.removeProject("someProject1");
 		
 		Bean[] beans = index.getBeansOfProject("someProject2");
 		assertNotNull(beans);
@@ -203,18 +202,18 @@ public class SpringMetamodelIndexTest {
 		assertFalse(beansList.contains(bean2));
 		assertTrue(beansList.contains(bean3));
 		
-		assertNull(index.getBeansOfProject("someProject1"));
+		assertEquals(0, index.getBeansOfProject("someProject1").length);
 	}
 		
 	@Test
 	void testRemoveAllBeansForSpecificDocument() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean3 = new Bean("beanName3", "beanType", locationForDoc2, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean1, bean2, bean3});
-		index.removeBeans("someProject", locationForDoc1.getUri());
+		index.removeElements("someProject", locationForDoc1.getUri());
 		
 		Bean[] beans = index.getBeansOfProject("someProject");
 		assertNotNull(beans);
@@ -249,10 +248,10 @@ public class SpringMetamodelIndexTest {
 
 		InjectionPoint point2 = new InjectionPoint("point2", "point2-type", locationForDoc1, null);
 
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, new InjectionPoint[] {point1, point2}, Set.of("supertype1", "supertype2"), emptyAnnotations, true);
-		String serialized = bean1.toString();
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, new InjectionPoint[] {point1, point2}, Set.of("supertype1", "supertype2"), emptyAnnotations, true, "symbolLabel");
 		
 		Gson gson = IndexCacheOnDiscDeltaBased.createGson();
+		String serialized = gson.toJson(bean1);
 		Bean deserializedBean = gson.fromJson(serialized, Bean.class);
 		
 		assertEquals("beanName1", deserializedBean.getName());
@@ -300,10 +299,10 @@ public class SpringMetamodelIndexTest {
 	
 	@Test
 	void testEmptyInjectionPointsOptimizationWithSerializeDeserializeBeans() {
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		String serialized = bean1.toString();
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		Gson gson = IndexCacheOnDiscDeltaBased.createGson();
+		String serialized = gson.toJson(bean1);
 		Bean deserializedBean = gson.fromJson(serialized, Bean.class);
 		
 		assertEquals("beanName1", deserializedBean.getName());
@@ -315,7 +314,7 @@ public class SpringMetamodelIndexTest {
 		
 	@Test
 	void testEmptyInjectionPointsOptimization() {
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		assertSame(DefaultValues.EMPTY_INJECTION_POINTS, bean1.getInjectionPoints());
 	}
 	
@@ -328,8 +327,8 @@ public class SpringMetamodelIndexTest {
 	@Test
 	void testFindNoMatchingBeansWithEmptySupertypes() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean1, bean2});
 		
@@ -343,8 +342,8 @@ public class SpringMetamodelIndexTest {
 	@Test
 	void testFindMatchingBeansWithOneProject() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4", "supertype5"), emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4", "supertype5"), emptyAnnotations, false, "symbolLabel");
 		
 		index.updateBeans("someProject", new Bean[] {bean1, bean2});
 		
@@ -364,17 +363,17 @@ public class SpringMetamodelIndexTest {
 		assertEquals(0, matchingBeans.length);
 
 		matchingBeans = index.getMatchingBeans("otherProject", "supertype1");
-		assertNull(matchingBeans);
+		assertEquals(0, matchingBeans.length);
 	}
 		
 	@Test
 	void testFindMatchingBeansWithMultipleProjects() {
 		SpringMetamodelIndex index = new SpringMetamodelIndex();
-		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false);
-		Bean bean2 = new Bean("beanName2", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4, supertype5"), emptyAnnotations, false);
+		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4, supertype5"), emptyAnnotations, false, "symbolLabel");
 		
-		Bean bean3 = new Bean("beanName3", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false);
-		Bean bean4 = new Bean("beanName4", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4, supertype5"), emptyAnnotations, false);
+		Bean bean3 = new Bean("beanName3", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, "symbolLabel");
+		Bean bean4 = new Bean("beanName4", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4, supertype5"), emptyAnnotations, false, "symbolLabel");
 
 		index.updateBeans("projectA", new Bean[] {bean1, bean2});
 		index.updateBeans("projectB", new Bean[] {bean3, bean4});
@@ -400,87 +399,130 @@ public class SpringMetamodelIndexTest {
 	
 	@Test
 	void testBasicSpringIndexStructure() {
-		SubType1 child1 = new SubType1(AbstractSpringIndexElement.NO_CHILDREN);
-		SpringIndexElement[] children = new SpringIndexElement[] {child1};
-		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, children);
+		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, "symbolLabel");
+
+		SubType1 child1 = new SubType1();
+		bean1.addChild(child1);
 		
-		SpringIndexElement[] children2 = bean1.getChildren();
-		assertEquals(1, children2.length);
-		assertSame(child1, children2[0]);
+		List<SpringIndexElement> children2 = bean1.getChildren();
+		assertEquals(1, children2.size());
+		assertSame(child1, children2.get(0));
 	}
 		
 	@Test
 	void testSpringIndexStructurePolymorphicSerialization() {
 		Gson gson = IndexCacheOnDiscDeltaBased.createGson();
 		
-		SubType2 subNode = new SubType2(null);
+		SubType2 subNode = new SubType2();
 		
-		SubType1 node1 = new SubType1(new SpringIndexElement[] {subNode});
-		SubType2 node2 = new SubType2(null);
+		SubType1 node1 = new SubType1();
+		node1.addChild(subNode);
 		
-		Root root = new Root(new SpringIndexElement[] {node1, node2});
+		SubType2 node2 = new SubType2();
+		
+		Root root = new Root();
+		root.addChild(node1);
+		root.addChild(node2);
 
 		String json = gson.toJson(root);
 		Root deserializedRoot = gson.fromJson(json, Root.class);
 		
-		SpringIndexElement[] children = deserializedRoot.getChildren();
-		assertEquals(2, children.length);
+		List<SpringIndexElement> children = deserializedRoot.getChildren();
+		assertEquals(2, children.size());
 		
-		SubType1 deserializedNode1 = (SubType1) java.util.Arrays.stream(children).filter(node -> node instanceof SubType1).findAny().get();
-		SubType2 deserializedNode2 = (SubType2) java.util.Arrays.stream(children).filter(node -> node instanceof SubType2).findAny().get();
+		SubType1 deserializedNode1 = (SubType1) children.stream().filter(node -> node instanceof SubType1).findAny().get();
+		SubType2 deserializedNode2 = (SubType2) children.stream().filter(node -> node instanceof SubType2).findAny().get();
 		
 		assertNotNull(deserializedNode1);
 		assertNotNull(deserializedNode2);
 		
-		SpringIndexElement[] deserializedChild2 = deserializedNode1.getChildren();
-		assertEquals(1, deserializedChild2.length);
-		assertTrue(deserializedChild2[0] instanceof SubType2);
+		List<SpringIndexElement> deserializedChild2 = deserializedNode1.getChildren();
+		assertEquals(1, deserializedChild2.size());
+		assertTrue(deserializedChild2.get(0) instanceof SubType2);
 	}
 	
 	@Test
 	void testSerializeDeserializeBeansWithChildElements() {
 
 		Gson gson = IndexCacheOnDiscDeltaBased.createGson();
+		
+		Bean bean1 = new Bean("beanName1", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, "symbolLabel");
+		Bean bean2 = new Bean("beanName2", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4, supertype5"), emptyAnnotations, false, "symbolLabel");
+		
+		Bean bean3 = new Bean("beanName3", "beanType1", locationForDoc1, emptyInjectionPoints, Set.of("supertype1", "supertype2"), emptyAnnotations, false, "symbolLabel");
+		Bean bean4 = new Bean("beanName4", "beanType2", locationForDoc1, emptyInjectionPoints, Set.of("supertype3", "supertype4, supertype5"), emptyAnnotations, false, "symbolLabel");
 
-		SubType2 childOfChild = new SubType2(null);
-		SubType1 child1 = new SubType1(new SpringIndexElement[] {childOfChild});
-		SubType2 child2 = new SubType2(null);
-		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, true, new SpringIndexElement[] {child1, child2});
+		bean1.addChild(bean2);
+		bean2.addChild(bean3);
+		bean3.addChild(bean4);
+
+		String serialized = gson.toJson(bean1);
+		Bean newBean = gson.fromJson(serialized, Bean.class);
+		
+		assertEquals("beanName1", newBean.getName());
+		assertEquals("beanName2", ((Bean) newBean.getChildren().get(0)).getName());
+		assertEquals("beanName3", ((Bean) newBean.getChildren().get(0).getChildren().get(0)).getName());
+		assertEquals("beanName4", ((Bean) newBean.getChildren().get(0).getChildren().get(0).getChildren().get(0)).getName());
+	}
+
+	@Test
+	void testSerializeDeserializeIndexElementsWithChildElements() {
+
+		Gson gson = IndexCacheOnDiscDeltaBased.createGson();
+
+		SubType2 childOfChild = new SubType2();
+		SubType1 child1 = new SubType1();
+		child1.addChild(childOfChild);
+
+		SubType2 child2 = new SubType2();
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, true, "symbolLabel");
+		bean1.addChild(child1);
+		bean1.addChild(child2);
 
 		String serialized = gson.toJson(bean1);
 		Bean deserializedBean = gson.fromJson(serialized, Bean.class);
 		
-		SpringIndexElement[] children = deserializedBean.getChildren();
-		assertEquals(2, children.length);
+		List<SpringIndexElement> children = deserializedBean.getChildren();
+		assertEquals(2, children.size());
 		
-		SpringIndexElement deserializedChild1 = java.util.Arrays.stream(children).filter(element -> element instanceof SubType1).findAny().get();
+		SpringIndexElement deserializedChild1 = children.stream().filter(element -> element instanceof SubType1).findAny().get();
 		assertNotNull(deserializedChild1);
 		
-		SpringIndexElement[] childrenOfChild = deserializedChild1.getChildren();
-		assertEquals(1, childrenOfChild.length);
-		assertTrue(childrenOfChild[0] instanceof SubType2);
+		List<SpringIndexElement> childrenOfChild = deserializedChild1.getChildren();
+		assertEquals(1, childrenOfChild.size());
+		assertTrue(childrenOfChild.get(0) instanceof SubType2);
 		
-		SpringIndexElement deserializedChild2 = java.util.Arrays.stream(children).filter(element -> element instanceof SubType2).findAny().get();
+		SpringIndexElement deserializedChild2 = children.stream().filter(element -> element instanceof SubType2).findAny().get();
 		assertNotNull(deserializedChild2);
-		assertEquals(0, deserializedChild2.getChildren().length);
+		assertEquals(0, deserializedChild2.getChildren().size());
+	}
+
+	@Test
+	void testAddChildAfterDeserialize() {
+
+		Gson gson = IndexCacheOnDiscDeltaBased.createGson();
+
+		SubType1 child1 = new SubType1();
+		Bean bean1 = new Bean("beanName1", "beanType", locationForDoc1, emptyInjectionPoints, emptySupertypes, emptyAnnotations, true, "symbolLabel");
+		bean1.addChild(child1);
+
+		String serialized = gson.toJson(bean1);
+		Bean deserializedBean = gson.fromJson(serialized, Bean.class);
+		
+		SubType2 newChild = new SubType2();
+		deserializedBean.addChild(newChild);
+		
+		List<SpringIndexElement> childrenAfterNewChildAdded = deserializedBean.getChildren();
+		assertEquals(2, childrenAfterNewChildAdded.size());
 	}
 
 	static class SubType1 extends AbstractSpringIndexElement {
-		public SubType1(SpringIndexElement[] children) {
-			super(children);
-		}
 	}
 
 	static class SubType2 extends AbstractSpringIndexElement {
-		public SubType2(SpringIndexElement[] children) {
-			super(children);
-		}
 	}
 
 	static class Root extends AbstractSpringIndexElement {
-		public Root(SpringIndexElement[] children) {
-			super(children);
-		}
 	}
 		
 }

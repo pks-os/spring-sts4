@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2023 VMware Inc.
+ * Copyright (c) 2016, 2025 VMware Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -218,14 +218,14 @@ public class VscodeCompletionEngineAdapter implements VscodeCompletionEngine {
 				cancelToken.checkCanceled();
 				
 				List<ICompletionProposal> completions = filter(rawCompletionList.completionItems());
-				Collections.sort(completions, ScoreableProposal.COMPARATOR);
+				Collections.sort(completions, AbstractScoreableProposal.COMPARATOR);
 				
 				cancelToken.checkCanceled();
 	
 				boolean isIncomplete = rawCompletionList.isIncomplete();
 				
 				List<CompletionItem> items = new ArrayList<>(completions.size());
-				SortKeys sortkeys = new SortKeys();
+				Optional<SortKeys> sortkeysOpt = engine.keepCompletionsOrder(doc) ? Optional.of(new SortKeys()) : Optional.empty();
 				int count = 0;
 
 				for (ICompletionProposal c : completions) {
@@ -237,7 +237,7 @@ public class VscodeCompletionEngineAdapter implements VscodeCompletionEngine {
 						break;
 					}
 					try {
-						items.add(adaptItem(doc, c, sortkeys));
+						items.add(adaptItem(doc, c, sortkeysOpt));
 					} catch (Exception e) {
 						log.error("error computing completion", e);
 					}
@@ -274,13 +274,14 @@ public class VscodeCompletionEngineAdapter implements VscodeCompletionEngine {
 		return SimpleTextDocumentService.NO_COMPLETIONS;
 	}
 
-	private CompletionItem adaptItem(TextDocument doc, ICompletionProposal completion, SortKeys sortkeys) throws Exception {
+	private CompletionItem adaptItem(TextDocument doc, ICompletionProposal completion, Optional<SortKeys> sortkeysOpt) throws Exception {
 		CompletionItem item = new CompletionItem();
 		item.setLabel(completion.getLabel());
 		item.setKind(completion.getKind());
-		item.setSortText(sortkeys.next());
+		sortkeysOpt.ifPresent(sortkeys -> item.setSortText(sortkeys.next()));
 		item.setFilterText(completion.getFilterText());
 		item.setInsertTextMode(InsertTextMode.AsIs);
+		item.setLabelDetails(completion.getLabelDetails());
 		if (completion.isDeprecated()) {
 			item.setTags(List.of(CompletionItemTag.Deprecated));
 		}
@@ -300,6 +301,7 @@ public class VscodeCompletionEngineAdapter implements VscodeCompletionEngine {
 		}
 		
 		List<Object> commands = new ArrayList<>(2);
+		completion.getCommand().ifPresent(commands::add);
 		if (LspClient.currentClient() != LspClient.Client.ECLIPSE) {
 			/*
 			 *  Eclipse client always send completionItem resolve request before applying completion. 
@@ -352,7 +354,9 @@ public class VscodeCompletionEngineAdapter implements VscodeCompletionEngine {
 					}
 				}
 				if (subCommands.size() == 1) {
-					item.setCommand((Command)subCommands.get(0));
+					Object o = subCommands.get(0);
+					Command subCommand = o instanceof Command ? (Command) o : GSON.fromJson(o instanceof JsonElement ? (JsonElement) o : GSON.toJsonTree(o), Command.class);
+					item.setCommand(subCommand);
 				} else if (subCommands.isEmpty()) {
 					item.setCommand(null);
 				}

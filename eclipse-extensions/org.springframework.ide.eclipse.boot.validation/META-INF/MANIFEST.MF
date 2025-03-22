@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Validation
 Bundle-SymbolicName: org.springframework.ide.eclipse.boot.validation;singleton:=true
 Bundle-Vendor: VMware, Inc
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Bundle-Activator: org.springframework.ide.eclipse.boot.validation.BootValidationActivator
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -18,6 +18,6 @@ Require-Bundle: org.eclipse.core.runtime,
  org.springframework.ide.eclipse.editor.support,
  org.eclipse.jface,
  org.springsource.ide.eclipse.commons.frameworks.core
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Export-Package: org.springframework.ide.eclipse.boot.validation.framework

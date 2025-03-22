@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2023, 2024 VMware, Inc.
+ * Copyright (c) 2023, 2025 VMware, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -69,7 +69,7 @@ public class NoRequestMappingAnnotationReconciler implements JdtAstReconciler {
 	}
 
 	@Override
-	public ASTVisitor createVisitor(IJavaProject project, URI docUri, CompilationUnit cu, IProblemCollector problemCollector, boolean isCompleteAst) {
+	public ASTVisitor createVisitor(IJavaProject project, URI docUri, CompilationUnit cu, IProblemCollector problemCollector, boolean isCompleteAst, boolean isIndexComplete) {
 
 		return new ASTVisitor() {
 
@@ -96,7 +96,7 @@ public class NoRequestMappingAnnotationReconciler implements JdtAstReconciler {
 					List<String> requestMethods = getRequestMethods(cu, a);
 					if (!requestMethods.isEmpty() && !requestMethods.contains(UNSUPPORTED_REQUEST_METHOD)) {
 						String uri = docUri.toASCIIString();
-						Range range = ReconcileUtils.createOpenRewriteRange(cu, a);
+						Range range = ReconcileUtils.createOpenRewriteRange(cu, a, null);
 						if (requestMethods.size() == 1 && SUPPORTED_REQUEST_METHODS.contains(requestMethods.get(0))) {
 							ReconcileProblemImpl problem = new ReconcileProblemImpl(getProblemType(), PROBLEM_LABEL, a.getStartPosition(), a.getLength());
 							ReconcileUtils.setRewriteFixes(registry, problem, List.of(

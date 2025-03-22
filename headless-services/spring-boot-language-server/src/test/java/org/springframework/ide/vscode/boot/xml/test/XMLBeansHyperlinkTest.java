@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019, 2023 Pivotal, Inc.
+ * Copyright (c) 2019, 2025 Pivotal, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,11 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
@@ -90,7 +92,7 @@ public class XMLBeansHyperlinkTest {
 		
 		harness.changeConfiguration(new Settings(new Gson().toJsonTree(settings)));
 		// Configuration change updates indexer hence we need to wait until this occurs as well
-		indexer.waitOperation();
+		indexer.waitOperation().get();
 
 		project = projects.mavenProject("test-xml-hyperlinks");
 		
@@ -162,10 +164,11 @@ public class XMLBeansHyperlinkTest {
     @Test
 //    @Disabled
     void testBeanRefHyperlink() throws Exception {
-		assertEquals(springIndex.getBeans().length, 4);
+    	Bean[] allBeans = springIndex.getBeans();
+    	assertEquals(4, springIndex.getBeans().length, "All beans are: %s".formatted(Arrays.stream(allBeans).map(b -> "(name=%s, type=%s)".formatted(b.getName(), b.getType())).collect(Collectors.joining(", "))));
 		
 		Bean[] beans = springIndex.getBeansWithName(project.getElementName(), "simpleObj");
-		assertEquals(1, beans.length);
+		assertEquals(1, beans.length, "Found beans are: %s".formatted(Arrays.stream(beans).map(b -> "(name=%s, type=%s)".formatted(b.getName(), b.getType())).collect(Collectors.joining(", "))));
 		assertEquals("simpleObj", beans[0].getName());
 		assertEquals("u.t.r.SimpleObj", beans[0].getType());
 		

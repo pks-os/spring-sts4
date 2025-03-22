@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: SpringSource Tool Suite (Core)
 Bundle-SymbolicName: org.springsource.ide.eclipse.commons.core;singleton:=true
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Bundle-Activator: org.springsource.ide.eclipse.commons.internal.core.CorePlugin
 Bundle-Vendor: Broadcom
 Require-Bundle: org.eclipse.core.resources,
@@ -19,7 +19,7 @@ Require-Bundle: org.eclipse.core.resources,
  org.eclipse.debug.core,
  org.eclipse.jface
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: org.springsource.ide.eclipse.commons.core,
  org.springsource.ide.eclipse.commons.core.preferences,
  org.springsource.ide.eclipse.commons.core.process,

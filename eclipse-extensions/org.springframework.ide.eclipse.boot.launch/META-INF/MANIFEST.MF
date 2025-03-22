@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Boot Launch
 Bundle-SymbolicName: org.springframework.ide.eclipse.boot.launch;singleton:=true
 Bundle-Vendor: VMware, Inc
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -34,7 +34,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.lsp4j,
  com.google.gson,
  org.eclipse.jdt.junit.core
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Export-Package: org.springframework.ide.eclipse.boot.launch,
  org.springframework.ide.eclipse.boot.launch.cli,

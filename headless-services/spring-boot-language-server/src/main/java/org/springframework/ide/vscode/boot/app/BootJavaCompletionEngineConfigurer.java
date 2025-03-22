@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020, 2024 Pivotal, Inc.
+ * Copyright (c) 2020, 2025 Pivotal, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,6 +26,7 @@ import org.springframework.ide.vscode.boot.java.annotations.AnnotationAttributeC
 import org.springframework.ide.vscode.boot.java.annotations.AnnotationHierarchies;
 import org.springframework.ide.vscode.boot.java.beans.BeanNamesCompletionProcessor;
 import org.springframework.ide.vscode.boot.java.beans.BeanTypesCompletionProcessor;
+import org.springframework.ide.vscode.boot.java.beans.BeanCompletionProvider;
 import org.springframework.ide.vscode.boot.java.beans.DependsOnCompletionProcessor;
 import org.springframework.ide.vscode.boot.java.beans.NamedCompletionProvider;
 import org.springframework.ide.vscode.boot.java.beans.ProfileCompletionProvider;
@@ -38,6 +39,7 @@ import org.springframework.ide.vscode.boot.java.cron.CronExpressionCompletionPro
 import org.springframework.ide.vscode.boot.java.data.DataRepositoryCompletionProcessor;
 import org.springframework.ide.vscode.boot.java.handlers.BootJavaCompletionEngine;
 import org.springframework.ide.vscode.boot.java.handlers.CompletionProvider;
+import org.springframework.ide.vscode.boot.java.rewrite.RewriteRefactorings;
 import org.springframework.ide.vscode.boot.java.scope.ScopeCompletionProcessor;
 import org.springframework.ide.vscode.boot.java.snippets.JavaSnippet;
 import org.springframework.ide.vscode.boot.java.snippets.JavaSnippetContext;
@@ -113,7 +115,9 @@ public class BootJavaCompletionEngineConfigurer {
 			@Qualifier("adHocProperties") ProjectBasedPropertyIndexProvider adHocProperties,
 			JavaSnippetManager snippetManager, 
 			CompilationUnitCache cuCache,
-			SpringMetamodelIndex springIndex) {
+			SpringMetamodelIndex springIndex,
+			RewriteRefactorings rewriteRefactorings,
+			BootJavaConfig config) {
 		
 		SpringPropertyIndexProvider indexProvider = params.indexProvider;
 		JavaProjectFinder javaProjectFinder = params.projectFinder;
@@ -167,6 +171,8 @@ public class BootJavaCompletionEngineConfigurer {
 		
 		providers.put(Annotations.SCHEDULED, new AnnotationAttributeCompletionProcessor(javaProjectFinder, Map.of(
 				"cron", new CronExpressionCompletionProvider())));
+
+		providers.put(Annotations.BEAN, new BeanCompletionProvider(javaProjectFinder, springIndex, rewriteRefactorings, config));
 
 		return new BootJavaCompletionEngine(cuCache, providers, snippetManager);
 	}

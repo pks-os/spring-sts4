@@ -10,23 +10,34 @@
  *******************************************************************************/
 package org.springframework.ide.vscode.boot.java.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ide.vscode.boot.java.Annotations;
+import org.springframework.ide.vscode.boot.java.annotations.AnnotationHierarchies;
 import org.springframework.ide.vscode.boot.java.beans.BeanUtils;
 import org.springframework.ide.vscode.boot.java.beans.CachedBean;
-import org.springframework.ide.vscode.boot.java.handlers.AbstractSymbolProvider;
-import org.springframework.ide.vscode.boot.java.handlers.EnhancedSymbolInformation;
+import org.springframework.ide.vscode.boot.java.data.jpa.queries.JdtQueryVisitorUtils;
+import org.springframework.ide.vscode.boot.java.data.jpa.queries.JdtQueryVisitorUtils.EmbeddedQueryExpression;
+import org.springframework.ide.vscode.boot.java.handlers.SymbolProvider;
 import org.springframework.ide.vscode.boot.java.utils.ASTUtils;
 import org.springframework.ide.vscode.boot.java.utils.CachedSymbol;
 import org.springframework.ide.vscode.boot.java.utils.SpringIndexerJavaContext;
@@ -43,12 +54,12 @@ import reactor.util.function.Tuples;
 /**
  * @author Martin Lippert
  */
-public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
+public class DataRepositorySymbolProvider implements SymbolProvider {
 
 	private static final Logger log = LoggerFactory.getLogger(DataRepositorySymbolProvider.class);
 	
 	@Override
-	protected void addSymbolsPass1(TypeDeclaration typeDeclaration, SpringIndexerJavaContext context, TextDocument doc) {
+	public void addSymbols(TypeDeclaration typeDeclaration, SpringIndexerJavaContext context, TextDocument doc) {
 		// this checks spring data repository beans that are defined as extensions of the repository interface
 		Tuple4<String, ITypeBinding, String, DocumentRegion> repositoryBean = getRepositoryBean(typeDeclaration, doc);
 
@@ -63,8 +74,9 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 						SymbolKind.Interface,
 						Either.forLeft(location));
 
-				EnhancedSymbolInformation enhancedSymbol = new EnhancedSymbolInformation(symbol);
+				context.getGeneratedSymbols().add(new CachedSymbol(context.getDocURI(), context.getLastModified(), symbol));
 
+				// index elements
 				InjectionPoint[] injectionPoints = ASTUtils.findInjectionPoints(typeDeclaration, doc);
 				
 				ITypeBinding concreteBeanTypeBindung = typeDeclaration.resolveBinding();
@@ -77,9 +89,9 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 				Collection<Annotation> annotationsOnMethod = ASTUtils.getAnnotations(typeDeclaration);
 				AnnotationMetadata[] annotations = ASTUtils.getAnnotationsMetadata(annotationsOnMethod, doc);
 				
-				Bean beanDefinition = new Bean(beanName, concreteRepoType, location, injectionPoints, supertypes, annotations, false);
+				Bean beanDefinition = new Bean(beanName, concreteRepoType, location, injectionPoints, supertypes, annotations, false, symbol.getName());
+				indexQueryMethods(beanDefinition, typeDeclaration, context, doc);
 				
-				context.getGeneratedSymbols().add(new CachedSymbol(context.getDocURI(), context.getLastModified(), enhancedSymbol));
 				context.getBeans().add(new CachedBean(context.getDocURI(), beanDefinition));
 
 			} catch (BadLocationException e) {
@@ -88,6 +100,75 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 		}
 	}
 
+	private void indexQueryMethods(Bean beanDefinition, TypeDeclaration typeDeclaration, SpringIndexerJavaContext context, TextDocument doc) {
+		AnnotationHierarchies annotationHierarchies = AnnotationHierarchies.get(typeDeclaration);
+		
+		List<MethodDeclaration> methods = identifyQueryMethods(typeDeclaration, annotationHierarchies);
+		
+		for (MethodDeclaration method : methods) {
+			SimpleName nameNode = method.getName();
+			
+			if (nameNode != null) {
+				String methodName = nameNode.getFullyQualifiedName();
+				DocumentRegion nodeRegion = ASTUtils.nodeRegion(doc, method);
+
+				try {
+					Range range = doc.toRange(nodeRegion);
+				
+					if (methodName != null) {
+						String queryString = identifyQueryString(method, annotationHierarchies);
+						beanDefinition.addChild(new QueryMethodIndexElement(methodName, queryString, range));
+					}
+	
+				} catch (BadLocationException e) {
+					log.error("query method range computation failed", e);
+				}
+			}
+		}
+	}
+
+	private List<MethodDeclaration> identifyQueryMethods(TypeDeclaration type, AnnotationHierarchies annotationHierarchies) {
+		List<MethodDeclaration> result = new ArrayList<>();
+		
+		MethodDeclaration[] methods = type.getMethods();
+		if (methods == null) return result;
+		
+		for (MethodDeclaration method : methods) {
+			int modifiers = method.getModifiers();
+			
+			if ((modifiers & Modifier.DEFAULT) == 0) {
+				result.add(method);
+			}
+		}
+		
+		return result;
+	}
+
+	private String identifyQueryString(MethodDeclaration method, AnnotationHierarchies annotationHierarchies) {
+		
+		EmbeddedQueryExpression queryExpression = null;
+
+		Collection<Annotation> annotations = ASTUtils.getAnnotations(method);
+		for (Annotation annotation : annotations) {
+			ITypeBinding typeBinding = annotation.resolveTypeBinding();
+			
+			if (typeBinding != null && annotationHierarchies.isAnnotatedWith(typeBinding, Annotations.DATA_QUERY_META_ANNOTATION)) {
+				if (annotation instanceof SingleMemberAnnotation) {
+					queryExpression = JdtQueryVisitorUtils.extractQueryExpression(annotationHierarchies, (SingleMemberAnnotation)annotation);
+				}
+				else if (annotation instanceof NormalAnnotation) {
+					queryExpression = JdtQueryVisitorUtils.extractQueryExpression(annotationHierarchies, (NormalAnnotation)annotation);
+				}
+			}
+		}
+		
+		if (queryExpression != null) {
+			return queryExpression.query().getText();
+		}
+
+		return null;
+	}
+	
 	protected String beanLabel(boolean isFunctionBean, String beanName, String beanType, String markerString) {
 		StringBuilder symbolLabel = new StringBuilder();
 		symbolLabel.append("@+");
@@ -104,9 +185,10 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 	}
 
 	private static Tuple4<String, ITypeBinding, String, DocumentRegion> getRepositoryBean(TypeDeclaration typeDeclaration, TextDocument doc) {
-		ITypeBinding resolvedType = typeDeclaration.resolveBinding();
+		AnnotationHierarchies annotationHierarchies = AnnotationHierarchies.get(typeDeclaration);
 
-		if (resolvedType != null) {
+		ITypeBinding resolvedType = typeDeclaration.resolveBinding();
+		if (resolvedType != null && !annotationHierarchies.isAnnotatedWith(resolvedType, Annotations.NO_REPO_BEAN)) {
 			return getRepositoryBean(typeDeclaration, doc, resolvedType);
 		}
 		else {
@@ -114,8 +196,7 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 		}
 	}
 
-	private static Tuple4<String, ITypeBinding, String, DocumentRegion> getRepositoryBean(TypeDeclaration typeDeclaration, TextDocument doc,
-			ITypeBinding resolvedType) {
+	private static Tuple4<String, ITypeBinding, String, DocumentRegion> getRepositoryBean(TypeDeclaration typeDeclaration, TextDocument doc, ITypeBinding resolvedType) {
 
 		ITypeBinding[] interfaces = resolvedType.getInterfaces();
 		for (ITypeBinding resolvedInterface : interfaces) {
@@ -128,7 +209,7 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 			}
 
 			if (Constants.REPOSITORY_TYPE.equals(simplifiedType)) {
-				String beanName = getBeanName(typeDeclaration);
+				String beanName = BeanUtils.getBeanName(typeDeclaration);
 
 				String domainType = null;
 				if (resolvedInterface.isParameterizedType()) {
@@ -156,11 +237,6 @@ public class DataRepositorySymbolProvider extends AbstractSymbolProvider {
 		else {
 			return null;
 		}
-	}
-
-	private static String getBeanName(TypeDeclaration typeDeclaration) {
-		String beanName = typeDeclaration.getName().toString();
-		return BeanUtils.getBeanNameFromType(beanName);
 	}
 
 }

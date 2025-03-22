@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2023 Pivotal, Inc.
+ * Copyright (c) 2017, 2025 Pivotal, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,6 +19,7 @@ import java.util.Set;
  * @author Kris De Volder
  */
 public class Annotations {
+	
 	public static final String BEAN = "org.springframework.context.annotation.Bean";
 	public static final String PROFILE = "org.springframework.context.annotation.Profile";
 	public static final String CONDITIONAL = "org.springframework.context.annotation.Conditional";
@@ -26,7 +27,11 @@ public class Annotations {
 
 	public static final String COMPONENT = "org.springframework.stereotype.Component";
 	public static final String CONFIGURATION = "org.springframework.context.annotation.Configuration";
+	public static final String IMPORT = "org.springframework.context.annotation.Import";
+
 	public static final String CONTROLLER = "org.springframework.stereotype.Controller";
+	
+	public static final String CONFIGURATION_PROPERTIES = "org.springframework.boot.context.properties.ConfigurationProperties";
 
 	public static final String REPOSITORY = "org.springframework.stereotype.Repository";
 	public static final String REPOSITORY_DEFINITION = "org.springframework.data.repository.RepositoryDefinition";
@@ -40,7 +45,9 @@ public class Annotations {
 	public static final String JPA_JAVAX_ID_CLASS = "javax.persistence.IdClass";
 	public static final String JPA_JAKARTA_NAMED_QUERY = "jakarta.persistence.NamedQuery"; 
 	public static final String JPA_JAVAX_NAMED_QUERY = "javax.persistence.NamedQuery";
-	public static final String DATA_QUERY = "org.springframework.data.jpa.repository.Query";
+
+	public static final String DATA_QUERY_META_ANNOTATION = "org.springframework.data.annotation.QueryAnnotation";
+	public static final String DATA_JPA_QUERY = "org.springframework.data.jpa.repository.Query";
 
 	public static final String AUTOWIRED = "org.springframework.beans.factory.annotation.Autowired";
 	public static final String QUALIFIER = "org.springframework.beans.factory.annotation.Qualifier";
@@ -89,6 +96,14 @@ public class Annotations {
 	public static final Set<String> NAMED_ANNOTATIONS = Set.of(Annotations.NAMED_JAKARTA, Annotations.NAMED_JAVAX);
 	
 	public static final String SCHEDULED = "org.springframework.scheduling.annotation.Scheduled";
+	public static final String EVENT_LISTENER = "org.springframework.context.event.EventListener";
+	
+	public static final String APPLICATION_LISTENER = "org.springframework.context.ApplicationListener";
+	public static final String EVENT_PUBLISHER = "org.springframework.context.ApplicationEventPublisher";
+	
+	public static final String BEAN_REGISTRAR_INTERFACE = "org.springframework.beans.factory.BeanRegistrar";
+	public static final String BEAN_REGISTRY_INTERFACE = "org.springframework.beans.factory.BeanRegistry";
+
 	
 	public static final Map<String, String> AOP_ANNOTATIONS = Map.of(
 	        "org.aspectj.lang.annotation.Pointcut", "Pointcut",
@@ -100,6 +115,10 @@ public class Annotations {
 	        "org.aspectj.lang.annotation.DeclareParents", "DeclareParents"
 	);
 	
-	
+	public static final Set<String> JAKARTA_ANNOTATIONS = Set.of(
+			Annotations.RESOURCE_JAKARTA, Annotations.INJECT_JAKARTA, Annotations.NAMED_JAKARTA,
+			Annotations.RESOURCE_JAVAX, Annotations.INJECT_JAVAX, Annotations.NAMED_JAVAX
+	);
+
 
 }

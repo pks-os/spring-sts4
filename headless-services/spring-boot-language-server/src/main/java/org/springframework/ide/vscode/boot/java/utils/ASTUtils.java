@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
@@ -35,9 +36,11 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -105,29 +108,34 @@ public class ASTUtils {
 	}
 
 	public static Optional<Expression> getAttribute(Annotation annotation, String name) {
-		if (annotation != null) {
-			try {
-				if (annotation.isSingleMemberAnnotation() && name.equals("value")) {
-					SingleMemberAnnotation sma = (SingleMemberAnnotation) annotation;
-					return Optional.ofNullable(sma.getValue());
-				} else if (annotation.isNormalAnnotation()) {
-					NormalAnnotation na = (NormalAnnotation) annotation;
-					Object attributeObjs = na.getStructuralProperty(NormalAnnotation.VALUES_PROPERTY);
-					if (attributeObjs instanceof List) {
-						for (Object atrObj : (List<?>)attributeObjs) {
-							if (atrObj instanceof MemberValuePair) {
-								MemberValuePair mvPair = (MemberValuePair) atrObj;
-								if (name.equals(mvPair.getName().getIdentifier())) {
-									return Optional.ofNullable(mvPair.getValue());
-								}
+		if (annotation == null) {
+			return Optional.empty();
+		}
+		
+		try {
+
+			if (annotation.isSingleMemberAnnotation() && name.equals("value")) {
+				SingleMemberAnnotation sma = (SingleMemberAnnotation) annotation;
+				return Optional.ofNullable(sma.getValue());
+				
+			} else if (annotation.isNormalAnnotation()) {
+				NormalAnnotation na = (NormalAnnotation) annotation;
+				Object attributeObjs = na.getStructuralProperty(NormalAnnotation.VALUES_PROPERTY);
+				if (attributeObjs instanceof List) {
+					for (Object atrObj : (List<?>)attributeObjs) {
+						if (atrObj instanceof MemberValuePair) {
+							MemberValuePair mvPair = (MemberValuePair) atrObj;
+							if (name.equals(mvPair.getName().getIdentifier())) {
+								return Optional.ofNullable(mvPair.getValue());
 							}
 						}
 					}
 				}
-			} catch (Exception e) {
-				log.error("", e);
 			}
+		} catch (Exception e) {
+			log.error("", e);
 		}
+
 		return Optional.empty();
 	}
 
@@ -205,13 +213,17 @@ public class ASTUtils {
 		if (exp instanceof StringLiteral) {
 			return getLiteralValue((StringLiteral) exp);
 		} else if (exp instanceof Name) {
+			
 			IBinding binding = ((Name) exp).resolveBinding();
 			if (binding != null && binding.getKind() == IBinding.VARIABLE) {
+
 				IVariableBinding varBinding = (IVariableBinding) binding;
+				
 				ITypeBinding klass = varBinding.getDeclaringClass();
-				if (klass!=null) {
+				if (klass != null) {
 					dependencies.accept(klass);
 				}
+
 				Object constValue = varBinding.getConstantValue();
 				if (constValue != null) {
 					return constValue.toString();
@@ -223,12 +235,14 @@ public class ASTUtils {
 			else if (exp instanceof SimpleName) {
 				return ((SimpleName) exp).getIdentifier();
 			}
-			else {
-				return null;
-			}
 		} else {
-			return null;
+			Object constValue = exp.resolveConstantExpressionValue();
+			if (constValue != null) {
+				return constValue.toString();
+			}
 		}
+		
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -262,9 +276,34 @@ public class ASTUtils {
 		return ImmutableList.of();
 	}
 
+	@SuppressWarnings("unchecked")
+	public static List<Expression> expandExpressionsFromPotentialArray(Expression exp) {
+		if (exp instanceof ArrayInitializer array) {
+			return ((List<Expression>)array.expressions());
+		}
+		else {
+			return List.of(exp);
+		}
+	}
 
+	public static Collection<Annotation> getAnnotations(AbstractTypeDeclaration abstractTypeDeclaration) {
+		if (abstractTypeDeclaration instanceof TypeDeclaration typeDeclaration) {
+			return getAnnotations(typeDeclaration);
+		}
+		else if (abstractTypeDeclaration instanceof RecordDeclaration recordDeclaration) {
+			return getAnnotations(recordDeclaration);
+		}
+		else {
+			return null;
+		}
+	}
+	
 	public static Collection<Annotation> getAnnotations(TypeDeclaration typeDeclaration) {
 		return getAnnotationsFromModifiers(typeDeclaration.getStructuralProperty(TypeDeclaration.MODIFIERS2_PROPERTY));
+	}
+	
+	public static Collection<Annotation> getAnnotations(RecordDeclaration recordDeclaration) {
+		return getAnnotationsFromModifiers(recordDeclaration.getStructuralProperty(RecordDeclaration.MODIFIERS2_PROPERTY));
 	}
 	
 	public static Collection<Annotation> getAnnotations(MethodDeclaration methodDeclaration) {
@@ -339,6 +378,52 @@ public class ASTUtils {
 			}
 		}
 		return null;
+	}
+	
+	public static boolean isAbstractClass(TypeDeclaration typeDeclaration) {
+		List<?> modifiers = typeDeclaration.modifiers();
+		for (Object object : modifiers) {
+			if (object instanceof Modifier) {
+				if (((Modifier) object).isAbstract()) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+	
+	public static ITypeBinding findInTypeHierarchy(ITypeBinding resolvedType, Set<String> typesToCheck) {
+		ITypeBinding[] interfaces = resolvedType.getInterfaces();
+
+		for (ITypeBinding resolvedInterface : interfaces) {
+			String simplifiedType = null;
+
+			if (resolvedInterface.isParameterizedType()) {
+				simplifiedType = resolvedInterface.getBinaryName();
+			}
+			else {
+				simplifiedType = resolvedInterface.getQualifiedName();
+			}
+
+			if (typesToCheck.contains(simplifiedType)) {
+				return resolvedInterface;
+			}
+			else {
+				ITypeBinding result = findInTypeHierarchy(resolvedInterface, typesToCheck);
+				if (result != null) {
+					return result;
+				}
+			}
+		}
+
+		ITypeBinding superclass = resolvedType.getSuperclass();
+		if (superclass != null) {
+			return findInTypeHierarchy(superclass, typesToCheck);
+		}
+		else {
+			return null;
+		}
 	}
 	
 	public static Optional<DocumentEdits> getImportsEdit(CompilationUnit cu, Collection<String> imprts, IDocument doc) {
@@ -421,7 +506,16 @@ public class ASTUtils {
 		return result.size() > 0 ? result.toArray(new InjectionPoint[result.size()]) : DefaultValues.EMPTY_INJECTION_POINTS;
 	}
 	
-	public static InjectionPoint[] findInjectionPoints(TypeDeclaration type, TextDocument doc) throws BadLocationException {
+	public static InjectionPoint[] findInjectionPoints(AbstractTypeDeclaration abstractType, TextDocument doc) throws BadLocationException {
+		if (abstractType instanceof TypeDeclaration type) {
+			return findInjectionPointsForType(type, doc);
+		}
+		else {
+			return DefaultValues.EMPTY_INJECTION_POINTS;
+		}
+	}
+	
+	public static InjectionPoint[] findInjectionPointsForType(TypeDeclaration type, TextDocument doc) throws BadLocationException {
 		List<InjectionPoint> result = new ArrayList<>();
 
 		findInjectionPoints(type.getMethods(), doc, result);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022, 2024 VMware, Inc.
+ * Copyright (c) 2022, 2025 VMware, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -66,7 +66,7 @@ public class BeanMethodNotPublicReconciler implements JdtAstReconciler {
 	}
 	
 	@Override
-	public ASTVisitor createVisitor(IJavaProject project, URI docUri, CompilationUnit cu, IProblemCollector problemCollector, boolean isCompleteAst) {
+	public ASTVisitor createVisitor(IJavaProject project, URI docUri, CompilationUnit cu, IProblemCollector problemCollector, boolean isCompleteAst, boolean isIndexComplete) {
 
 		return new ASTVisitor() {
 
@@ -151,9 +151,9 @@ public class BeanMethodNotPublicReconciler implements JdtAstReconciler {
 		
 			FixDescriptor fix1 = new FixDescriptor(id, List.of(docUri.toASCIIString()), LABEL)
 					.withRecipeScope(RecipeScope.NODE)
-					.withRangeScope(ReconcileUtils.createOpenRewriteRange(cu, method));
+					.withRangeScope(ReconcileUtils.createOpenRewriteRange(cu, method, null));
 
-			Range methodRange = ReconcileUtils.createOpenRewriteRange(cu, method);
+			Range methodRange = ReconcileUtils.createOpenRewriteRange(cu, method, null);
 			fix1 = fix1.withRangeScope(methodRange);
 
 			FixDescriptor fix2 = new FixDescriptor(id, List.of(docUri.toASCIIString()), ReconcileUtils.buildLabel(LABEL, RecipeScope.FILE))

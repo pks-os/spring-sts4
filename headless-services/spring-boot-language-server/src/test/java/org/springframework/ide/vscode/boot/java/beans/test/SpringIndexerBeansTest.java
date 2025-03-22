@@ -10,10 +10,13 @@
  *******************************************************************************/
 package org.springframework.ide.vscode.boot.java.beans.test;
 
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +32,7 @@ import org.springframework.ide.vscode.boot.bootiful.SymbolProviderTestConf;
 import org.springframework.ide.vscode.boot.index.SpringMetamodelIndex;
 import org.springframework.ide.vscode.commons.languageserver.java.JavaProjectFinder;
 import org.springframework.ide.vscode.commons.protocol.spring.Bean;
+import org.springframework.ide.vscode.commons.protocol.spring.SpringIndexElement;
 import org.springframework.ide.vscode.project.harness.BootLanguageServerHarness;
 import org.springframework.ide.vscode.project.harness.ProjectsHarness;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -78,7 +82,13 @@ public class SpringIndexerBeansTest {
         Bean simpleBean = Arrays.stream(beans).filter(bean -> bean.getName().equals("simpleBean")).findFirst().get();
         
         assertEquals("org.test.SimpleConfiguration", simpleConfigBean.getType());
+        assertTrue(simpleConfigBean.isConfiguration());
+        
         assertEquals("org.test.BeanClass", simpleBean.getType());
+        
+        List<SpringIndexElement> children = simpleConfigBean.getChildren();
+        assertEquals(1, children.size());
+        assertSame(simpleBean, children.get(0));
     }
 
     @Test
@@ -90,20 +100,35 @@ public class SpringIndexerBeansTest {
                 // @Bean("implicitNamedBean")
                 SpringIndexerHarness.symbol("implicitNamedBean", "@+ 'implicitNamedBean' (@Bean) BeanClass"),
 
+                // @Bean("implicit" + "NamedBean")
+                SpringIndexerHarness.symbol("\"implicit\" + \"NamedBean\" + \"Concatenated\"", "@+ 'implicitNamedBeanConcatenated' (@Bean) BeanClass"),
+
                 // @Bean(value="valueBean")
                 SpringIndexerHarness.symbol("valueBean", "@+ 'valueBean' (@Bean) BeanClass"),
+
+                // @Bean(value="value" + "Bean")
+                SpringIndexerHarness.symbol("\"valueBean\" + \"Concatenated\"", "@+ 'valueBeanConcatenated' (@Bean) BeanClass"),
 
                 // @Bean(value= {"valueBean1", "valueBean2"})
                 SpringIndexerHarness.symbol("valueBean1", "@+ 'valueBean1' (@Bean) BeanClass"),
                 SpringIndexerHarness.symbol("valueBean2", "@+ 'valueBean2' (@Bean) BeanClass"),
+
+            	// @Bean(value= {"value" + "Bean1" + "Concatenated", "valueBean2" + "Concatenated"})
+                SpringIndexerHarness.symbol("\"value\" + \"Bean1\" + \"Concatenated\"", "@+ 'valueBean1Concatenated' (@Bean) BeanClass"),
+                SpringIndexerHarness.symbol("\"valueBean2\" + \"Concatenated\"", "@+ 'valueBean2Concatenated' (@Bean) BeanClass"),
 
                 // @Bean(name="namedBean")
                 SpringIndexerHarness.symbol("namedBean", "@+ 'namedBean' (@Bean) BeanClass"),
 
                 // @Bean(name= {"namedBean1", "namedBean2"})
                 SpringIndexerHarness.symbol("namedBean1", "@+ 'namedBean1' (@Bean) BeanClass"),
-                SpringIndexerHarness.symbol("namedBean2", "@+ 'namedBean2' (@Bean) BeanClass")
-        );
+                SpringIndexerHarness.symbol("namedBean2", "@+ 'namedBean2' (@Bean) BeanClass"),
+
+            	// @Bean(name= {"named" + "Bean1" + "Concatenated", "named" + "Bean2" + Constants.SAMPLE_CONSTANT})
+                SpringIndexerHarness.symbol("\"named\" + \"Bean1\" + \"Concatenated\"", "@+ 'namedBean1Concatenated' (@Bean) BeanClass"),
+                SpringIndexerHarness.symbol("\"named\" + \"Bean2\" + Constants.SAMPLE_CONSTANT", "@+ 'namedBean2SampleConstant' (@Bean) BeanClass")
+
+        	);
     }
 
     @Test
@@ -154,10 +179,34 @@ public class SpringIndexerBeansTest {
     }
 
     @Test
+    void testScanComponentClassWithNameAndStringConcatenation() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/SpecialNameComponentWithStringConcatenation.java").toUri().toString();
+        SpringIndexerHarness.assertDocumentSymbols(indexer, docUri,
+                SpringIndexerHarness.symbol("@Component(\"special\" + \"Name\")", "@+ 'specialName' (@Component) SpecialNameComponentWithStringConcatenation")
+        );
+    }
+
+    @Test
     void testScanComponentClassWithNameAndAttributeName() throws Exception {
         String docUri = directory.toPath().resolve("src/main/java/org/test/SpecialNameComponentWithAttributeName.java").toUri().toString();
         SpringIndexerHarness.assertDocumentSymbols(indexer, docUri,
                 SpringIndexerHarness.symbol("@Component(value = \"specialNameWithAttributeName\")", "@+ 'specialNameWithAttributeName' (@Component) SpecialNameComponentWithAttributeName")
+        );
+    }
+
+    @Test
+    void testScanComponentClassWithNameAndAttributeNameWithStringConcatenation() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/SpecialNameComponentWithAttributeNameWithStringConcatenation.java").toUri().toString();
+        SpringIndexerHarness.assertDocumentSymbols(indexer, docUri,
+                SpringIndexerHarness.symbol("@Component(value = \"specialName\" + \"WithAttributeName\")", "@+ 'specialNameWithAttributeName' (@Component) SpecialNameComponentWithAttributeNameWithStringConcatenation")
+        );
+    }
+
+    @Test
+    void testScanComponentClassWithNameWithStringConcatenationAndConstant() throws Exception {
+        String docUri = directory.toPath().resolve("src/main/java/org/test/SpecialNameComponentWithStringConcatenationAndConstant.java").toUri().toString();
+        SpringIndexerHarness.assertDocumentSymbols(indexer, docUri,
+                SpringIndexerHarness.symbol("@Component(\"special\" + \"Name\" + Constants.SAMPLE_CONSTANT)", "@+ 'specialNameSampleConstant' (@Component) SpecialNameComponentWithStringConcatenationAndConstant")
         );
     }
 

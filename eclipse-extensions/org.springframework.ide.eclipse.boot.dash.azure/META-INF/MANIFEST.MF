@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: org.springframework.ide.eclipse.boot.dash.azure;singleton:=true
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Bundle-Vendor: VMware, Inc
 Bundle-Name: Spring Boot Dash CF Support
 Require-Bundle: org.eclipse.ui,
@@ -20,7 +20,7 @@ Import-Package: com.google.gson,
  com.google.gson.annotations,
  com.google.gson.reflect,
  com.google.gson.stream
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-Activator: org.springframework.ide.eclipse.boot.dash.azure.BootDashAzurePlugin
 Bundle-ActivationPolicy: lazy
 Export-Package: org.springframework.ide.eclipse.boot.dash.azure

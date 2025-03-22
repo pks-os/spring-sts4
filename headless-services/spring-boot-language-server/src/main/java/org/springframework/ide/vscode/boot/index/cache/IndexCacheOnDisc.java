@@ -56,6 +56,8 @@ import com.google.gson.stream.JsonReader;
 
 /**
  * @author Martin Lippert
+ * 
+ * @deprecated Use IndexCacheOnDiscDeltaBased - this class is no longer maintained and up-to-date with the latest index changes
  */
 public class IndexCacheOnDisc implements IndexCache {
 
@@ -447,8 +449,10 @@ public class IndexCacheOnDisc implements IndexCache {
 	        
 	        JsonElement isConfigurationObject = parsedObject.get("isConfiguration");
 	        boolean isConfiguration = context.deserialize(isConfigurationObject, boolean.class);
+	        
+	        String symbolLabel = parsedObject.get("symbolLabel").getAsString();
 
-	        return new Bean(beanName, beanType, location, injectionPoints, supertypes, annotations, isConfiguration);
+	        return new Bean(beanName, beanType, location, injectionPoints, supertypes, annotations, isConfiguration, symbolLabel);
 	    }
 	}
 	

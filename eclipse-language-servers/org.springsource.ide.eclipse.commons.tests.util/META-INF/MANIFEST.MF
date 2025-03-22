@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: SpringSource Tool Suite Test Utilities
 Bundle-SymbolicName: org.springsource.ide.eclipse.commons.tests.util;singleton:=true
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Bundle-Vendor: Broadcom
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -13,7 +13,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.net,
  org.springsource.ide.eclipse.commons.core,
  org.springsource.ide.eclipse.commons.frameworks.core
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: org.springsource.ide.eclipse.commons.tests.util
 Import-Package: org.apache.log4j;resolution:=optional,
  org.slf4j;resolution:=optional

@@ -18,30 +18,41 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ide.vscode.boot.java.Annotations;
-import org.springframework.ide.vscode.boot.java.handlers.AbstractSymbolProvider;
-import org.springframework.ide.vscode.boot.java.handlers.EnhancedSymbolInformation;
+import org.springframework.ide.vscode.boot.java.handlers.SymbolProvider;
+import org.springframework.ide.vscode.commons.util.BadLocationException;
 import org.springframework.ide.vscode.commons.util.text.TextDocument;
 
 /**
  * @author Martin Lippert
  */
-public class RestrictedDefaultSymbolProvider extends AbstractSymbolProvider {
+public class RestrictedDefaultSymbolProvider implements SymbolProvider {
 
 	private static final Logger log = LoggerFactory.getLogger(RestrictedDefaultSymbolProvider.class);
 
 	@Override
-	protected void addSymbolsPass1(Annotation node, ITypeBinding typeBinding,
-			Collection<ITypeBinding> metaAnnotations, SpringIndexerJavaContext context, TextDocument doc) {
+	public void addSymbols(Annotation node, ITypeBinding typeBinding, Collection<ITypeBinding> metaAnnotations, SpringIndexerJavaContext context, TextDocument doc) {
 
 		// provide default symbol only in case this annotation is not combined with @Bean annotation
 		if (!isCombinedWithAnnotation(node, Annotations.BEAN)) {
 			try {
-				EnhancedSymbolInformation enhancedSymbol = new EnhancedSymbolInformation(DefaultSymbolProvider.provideDefaultSymbol(node, doc));
-				context.getGeneratedSymbols().add(new CachedSymbol(context.getDocURI(), context.getLastModified(), enhancedSymbol));
-			} catch (Exception e) {
+				WorkspaceSymbol symbol = DefaultSymbolProvider.provideDefaultSymbol(node, doc);
+				context.getGeneratedSymbols().add(new CachedSymbol(context.getDocURI(), context.getLastModified(), symbol));
+				
+//				SimpleSymbolElement symbolIndexElement = new SimpleSymbolElement(symbol);
+//				SpringIndexElement parentIndexElement = context.getNearestIndexElementForNode(node.getParent());
+//				if (parentIndexElement != null) {
+//					parentIndexElement.addChild(symbolIndexElement);
+//				}
+//				else {
+//					context.getBeans().add(new CachedBean(context.getDocURI(), symbolIndexElement));
+//				}
+//				context.setIndexElementForASTNode(node.getParent(), symbolIndexElement);
+				
+			} catch (BadLocationException e) {
 				log.warn(e.getMessage());
 			}
 		}

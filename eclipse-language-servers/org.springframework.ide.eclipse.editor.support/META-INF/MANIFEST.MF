@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-Vendor: %providerName
 Bundle-SymbolicName: org.springframework.ide.eclipse.editor.support
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Bundle-Activator: org.springframework.ide.eclipse.editor.support.EditorSupportActivator
 Bundle-Localization: plugin
 Require-Bundle: org.eclipse.ui,
@@ -38,7 +38,7 @@ Export-Package: org.springframework.ide.eclipse.editor.support,
  org.springframework.ide.eclipse.editor.support.yaml.schema,
  org.springframework.ide.eclipse.editor.support.yaml.schema.constraints,
  org.springframework.ide.eclipse.editor.support.yaml.structure
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Automatic-Module-Name: org.springframework.ide.eclipse.editor.support
 Import-Package: org.eclipse.core.runtime,
  org.eclipse.core.runtime.jobs,

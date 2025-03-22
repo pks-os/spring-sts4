@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Boot Tests
 Bundle-SymbolicName: org.springframework.ide.eclipse.boot.test
-Bundle-Version: 4.28.0.qualifier
+Bundle-Version: 4.30.0.qualifier
 Require-Bundle: org.eclipse.ui,
  org.junit,
  org.springsource.ide.eclipse.commons.livexp,
@@ -27,7 +27,7 @@ Require-Bundle: org.eclipse.ui,
  org.springframework.ide.eclipse.boot.launch,
  com.google.guava,
  org.eclipse.m2e.core
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Broadcom
 Export-Package: org.springframework.ide.eclipse.boot.test,

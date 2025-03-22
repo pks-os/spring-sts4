@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2024 Broadcom
+ * Copyright (c) 2024, 2025 Broadcom
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -74,7 +74,7 @@ public class ImplicitWebAnnotationNamesReconciler implements JdtAstReconciler {
 	}
 	
 	@Override
-	public ASTVisitor createVisitor(IJavaProject project, URI docUri, CompilationUnit cu, IProblemCollector problemCollector, boolean isCompleteAst) {
+	public ASTVisitor createVisitor(IJavaProject project, URI docUri, CompilationUnit cu, IProblemCollector problemCollector, boolean isCompleteAst, boolean isIndexComplete) {
 
 		return new ASTVisitor() {
 
@@ -97,7 +97,7 @@ public class ImplicitWebAnnotationNamesReconciler implements JdtAstReconciler {
 					ReconcileProblemImpl problem = new ReconcileProblemImpl(getProblemType(), PROBLEM_LABEL, nodeForProblemRange.getStartPosition(), nodeForProblemRange.getLength());
 
 					String uri = docUri.toASCIIString();
-					Range range = ReconcileUtils.createOpenRewriteRange(cu, a);
+					Range range = ReconcileUtils.createOpenRewriteRange(cu, a, null);
 					ReconcileUtils.setRewriteFixes(registry, problem, List.of(
 							new FixDescriptor(org.openrewrite.java.spring.ImplicitWebAnnotationNames.class.getName(), List.of(uri), FIX_LABEL)
 								.withRangeScope(range)
